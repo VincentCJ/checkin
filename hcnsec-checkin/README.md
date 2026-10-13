@@ -7,8 +7,8 @@
 
 | 文件 | 作用 | 托管地址（Egern 用这个） |
 |---|---|---|
-| `hcnsec-auth-capture.js` | 抓登录态：请求头 Cookie/用户ID + 响应体令牌/Set-Cookie | `https://paste.rs/n5KU9` |
-| `hcnsec-checkin.js` | 每日定时签到 + 推送结果 | `https://paste.rs/QdVVQ` |
+| `hcnsec-auth-capture.js` | 抓登录态：请求头 Cookie/用户ID + 响应体令牌/Set-Cookie | `https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js` |
+| `hcnsec-checkin.js` | 每日定时签到 + 推送结果 | `https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-checkin.js` |
 | `egern-配置片段.yaml` | 直接并入 Egern 配置的片段（含 A/B 两种抓取写法） | — |
 | `tests/mock-server.py`、`tests/harness.mjs` | 离线自测（模拟站点 + 假 ctx 跑全部逻辑） | — |
 

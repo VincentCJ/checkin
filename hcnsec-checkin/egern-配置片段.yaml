@@ -2,8 +2,8 @@
 #  api.hcnsec.cn（新疆幻城网安公益大模型网关）自动签到 · Egern 配置
 #
 #  脚本（两个文件，均已托管）：
-#   抓登录态：https://paste.rs/n5KU9
-#   每日签到：https://paste.rs/QdVVQ
+#   抓登录态：https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js
+#   每日签到：https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-checkin.js
 #
 #  ⚠️ 并入你当前配置时请「合并列表」，别整段覆盖，否则原有脚本会丢。
 #  ⚠️ mitm 里同时放行 api.iamhc.cn（站点备用域）。
@@ -28,7 +28,7 @@ scriptings:
   - http_response:
       name: "hcnsec 抓登录态"
       match: "^https://api\\.hcnsec\\.cn/api/"
-      script_url: "https://paste.rs/n5KU9"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
       body_required: true        # 必须 true，否则读不到响应体
       max_size: 262144           # 超过 256KB 的响应不交给脚本（省内存）
       timeout: 15
@@ -44,7 +44,7 @@ scriptings:
   # - http_request:
   #     name: "hcnsec 抓请求头"
   #     match: "^https://api\\.hcnsec\\.cn/api/"
-  #     script_url: "https://paste.rs/n5KU9"
+  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
   #     timeout: 15
   #     update_interval: 86400
   #     env:
@@ -53,7 +53,7 @@ scriptings:
   # - http_response:
   #     name: "hcnsec 补抓会话刷新"
   #     match: "^https://api\\.hcnsec\\.cn/api/user/(login|auth/refresh)"
-  #     script_url: "https://paste.rs/n5KU9"
+  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
   #     body_required: true
   #     timeout: 15
   #     update_interval: 86400
@@ -64,7 +64,7 @@ scriptings:
   - schedule:
       name: "hcnsec 每日签到"
       cron: "20 8 * * *"         # 每天 08:20，可自行调整（支持 6 段秒级）
-      script_url: "https://paste.rs/QdVVQ"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-checkin.js"
       timeout: 60
       update_interval: 86400
       env:
