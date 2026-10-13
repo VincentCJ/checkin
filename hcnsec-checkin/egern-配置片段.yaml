@@ -2,8 +2,8 @@
 #  api.hcnsec.cn（新疆幻城网安公益大模型网关）自动签到 · Egern 配置
 #
 #  脚本（两个文件，均已托管）：
-#   抓登录态：https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js
-#   每日签到：https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-checkin.js
+#   抓登录态：https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-auth-capture.js
+#   每日签到：https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-checkin.js
 #
 #  ⚠️ 并入你当前配置时请「合并列表」，别整段覆盖，否则原有脚本会丢。
 #  ⚠️ mitm 里同时放行 api.iamhc.cn（站点备用域）。
@@ -25,10 +25,11 @@ scriptings:
   # Egern 的 response 脚本里同样能读到 ctx.request，
   # 所以一条 http_response 就能同时抄到「请求头里的 Cookie / 用户ID」
   # 和「响应体里的令牌、Set-Cookie」。
+  # 额外：你在浏览器里点签到时，它会把结果推给你。
   - http_response:
       name: "hcnsec 抓登录态"
       match: "^https://api\\.hcnsec\\.cn/api/"
-      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
+      script_url: "https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-auth-capture.js"
       body_required: true        # 必须 true，否则读不到响应体
       max_size: 262144           # 超过 256KB 的响应不交给脚本（省内存）
       timeout: 15
@@ -44,7 +45,7 @@ scriptings:
   # - http_request:
   #     name: "hcnsec 抓请求头"
   #     match: "^https://api\\.hcnsec\\.cn/api/"
-  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
+  #     script_url: "https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-auth-capture.js"
   #     timeout: 15
   #     update_interval: 86400
   #     env:
@@ -53,7 +54,7 @@ scriptings:
   # - http_response:
   #     name: "hcnsec 补抓会话刷新"
   #     match: "^https://api\\.hcnsec\\.cn/api/user/(login|auth/refresh)"
-  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-auth-capture.js"
+  #     script_url: "https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-auth-capture.js"
   #     body_required: true
   #     timeout: 15
   #     update_interval: 86400
@@ -64,12 +65,14 @@ scriptings:
   - schedule:
       name: "hcnsec 每日签到"
       cron: "20 8 * * *"         # 每天 08:20，可自行调整（支持 6 段秒级）
-      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/hcnsec-checkin/hcnsec-checkin.js"
+      script_url: "https://cdn.jsdelivr.net/gh/VincentCJ/checkin@main/hcnsec-checkin/hcnsec-checkin.js"
       timeout: 60
       update_interval: 86400
       env:
-        NOTIFY_ALWAYS: "1"       # "0" = 只在真的领到时通知（重复签到静默）
+        NOTIFY_ALWAYS: "1"       # "0" = 只在真的领到时通知（已签到/待人工都静默）
         NOTIFY_VERBOSE: "0"      # "1" = 通知里带上签到前额度明细
+        # HCN_TURNSTILE: ""      # 有办法拿到 Turnstile token 时填这里（约 5 分钟有效）
+        # HCN_MANUAL_URL: "https://api.hcnsec.cn/profile"   # 通知里「去签到」打开的地址
         # 下面三个一般不用填：登录态由抓取脚本自动存
         HCN_COOKIE: ""
         HCN_ACCESS_TOKEN: ""

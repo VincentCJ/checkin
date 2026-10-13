@@ -242,6 +242,35 @@ export default async function (ctx_) {
     }
   }
 
+  /* -------- B2) 顺手记下浏览器带过来的 Turnstile token -------- */
+  // 站点签到是 POST /api/user/checkin?turnstile=XXX。token 一次一用、约 5 分钟过期，
+  // 所以这里只作为「签到脚本刚好赶在窗口内」的机会，并留下排错线索。
+  let tsNew = false;
+  try {
+    const m = /[?&]turnstile=([^&#]+)/i.exec(url);
+    const hdrTs = hget(rqHeaders, 'turnstile') || hget(rqHeaders, 'x-turnstile-token');
+    const val = m ? decodeURIComponent(m[1]) : hdrTs;
+    if (val && val.length > 10) {
+      const prev = (function () { try { return JSON.parse(ctx.storage.get('hcnsec_turnstile') || '{}'); } catch (e) { return {}; } })();
+      if (prev.token !== val) {
+        ctx.storage.set('hcnsec_turnstile', JSON.stringify({ token: val, at: Date.now(), url }));
+        tsNew = true;
+      }
+    }
+  } catch (e) { /* 忽略 */ }
+
+  /* -------- B3) 浏览器自己签到时，记下结果（顺便告诉你今天已签） -------- */
+  let checkinDone = null;
+  if (ctx.response && /\/api\/user\/checkin\b/i.test(url) && /POST/i.test(String(rq.method || ''))) {
+    try {
+      const text = await rp.text();
+      const body = text ? JSON.parse(text) : null;
+      if (body && body.success && body.data && typeof body.data.quota_awarded === 'number') {
+        checkinDone = body.data.quota_awarded;
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
   /* -------- C) 落盘 + 通知 -------- */
   const changed = JSON.stringify(snap) !== before;
   if (changed || sawRequest) {
@@ -257,8 +286,16 @@ export default async function (ctx_) {
     ctx.storage.set('hcnsec_header_names', JSON.stringify(present));
   }
 
-  if (got.length && NOTIFY) {
-    const bits = [];
+  /* -------- D) 通知 -------- */
+  if (checkinDone != null && ctx.env.NOTIFY_CHECKIN !== '0') {
+    ctx.notify({
+      title: 'api.hcnsec.cn 今日签到已完成 ✅',
+      body: `本次获得 ${checkinDone} 额度（浏览器里点的签到）\n时间：${stamp()}`,
+      sound: false,
+    });
+    return;
+  }
+  if (got.length && NOTIFY) {    const bits = [];
     if (snap.newApiUser) bits.push(`用户ID ${snap.newApiUser}`);
     if (snap.cookie) bits.push(`Cookie ${parseCookieNames(snap.cookie).join('/')}`);
     ctx.notify({
