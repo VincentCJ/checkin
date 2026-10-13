@@ -1,0 +1,77 @@
+# ════════════════════════════════════════════════════════════════════
+#  api.hcnsec.cn（新疆幻城网安公益大模型网关）自动签到 · Egern 配置
+#
+#  脚本（两个文件，均已托管）：
+#   抓登录态：https://paste.rs/n5KU9
+#   每日签到：https://paste.rs/QdVVQ
+#
+#  ⚠️ 并入你当前配置时请「合并列表」，别整段覆盖，否则原有脚本会丢。
+#  ⚠️ mitm 里同时放行 api.iamhc.cn（站点备用域）。
+#
+#  抓取那一条有 A / B 两种写法，任选其一：
+#    A = 单条模式（推荐，最简）—— 一条 http_response 全搞定
+#    B = 双条模式（保守）—— 与之前 freeapi.site 那套完全一致
+#  两条都指向同一个抓取脚本文件，脚本本身两种模式自适应。
+# ════════════════════════════════════════════════════════════════════
+
+mitm:
+  hostnames:
+    includes:
+      - "api.hcnsec.cn"
+      - "api.iamhc.cn"
+
+scriptings:
+  # ────────── 方案 A：单条模式（推荐，只加这一条） ──────────
+  # Egern 的 response 脚本里同样能读到 ctx.request，
+  # 所以一条 http_response 就能同时抄到「请求头里的 Cookie / 用户ID」
+  # 和「响应体里的令牌、Set-Cookie」。
+  - http_response:
+      name: "hcnsec 抓登录态"
+      match: "^https://api\\.hcnsec\\.cn/api/"
+      script_url: "https://paste.rs/n5KU9"
+      body_required: true        # 必须 true，否则读不到响应体
+      max_size: 262144           # 超过 256KB 的响应不交给脚本（省内存）
+      timeout: 15
+      update_interval: 86400
+      env:
+        NOTIFY_ON_CAPTURE: "1"   # 抓到新登录态时弹通知；嫌吵改 "0"
+        # NOTIFY_ANY: "1"        # 排错用：每次都通知，并显示本次能否读到请求头
+
+  # ────────── 方案 B：双条模式（与 freeapi.site 那套相同） ──────────
+  # 如果方案 A 在你机器上表现异常（比如日志显示「仅响应（读不到请求头）」），
+  # 就注释掉方案 A，改用下面两条 —— 同一个脚本文件注册两次。
+  #
+  # - http_request:
+  #     name: "hcnsec 抓请求头"
+  #     match: "^https://api\\.hcnsec\\.cn/api/"
+  #     script_url: "https://paste.rs/n5KU9"
+  #     timeout: 15
+  #     update_interval: 86400
+  #     env:
+  #       NOTIFY_ON_CAPTURE: "1"
+  #
+  # - http_response:
+  #     name: "hcnsec 补抓会话刷新"
+  #     match: "^https://api\\.hcnsec\\.cn/api/user/(login|auth/refresh)"
+  #     script_url: "https://paste.rs/n5KU9"
+  #     body_required: true
+  #     timeout: 15
+  #     update_interval: 86400
+  #     env:
+  #       NOTIFY_ON_CAPTURE: "0"
+
+  # ────────── 每日签到 ──────────
+  - schedule:
+      name: "hcnsec 每日签到"
+      cron: "20 8 * * *"         # 每天 08:20，可自行调整（支持 6 段秒级）
+      script_url: "https://paste.rs/QdVVQ"
+      timeout: 60
+      update_interval: 86400
+      env:
+        NOTIFY_ALWAYS: "1"       # "0" = 只在真的领到时通知（重复签到静默）
+        NOTIFY_VERBOSE: "0"      # "1" = 通知里带上签到前额度明细
+        # 下面三个一般不用填：登录态由抓取脚本自动存
+        HCN_COOKIE: ""
+        HCN_ACCESS_TOKEN: ""
+        HCN_USER_ID: ""
+        # HCN_DRY_RUN: "1"       # 排错用：只读额度、不真的签到

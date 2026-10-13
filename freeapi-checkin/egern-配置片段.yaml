@@ -1,0 +1,50 @@
+# ════════════════════════════════════════════════════════════════════
+#  freeapi.site 自动签到 · Egern 配置片段
+#
+#  脚本地址（本仓库 raw）：
+#   抓 token ：https://raw.githubusercontent.com/VincentCJ/checkin/main/freeapi-checkin/freeapi-token-capture.js
+#   每日签到 ：https://raw.githubusercontent.com/VincentCJ/checkin/main/freeapi-checkin/freeapi-checkin.js
+#
+#  ⚠️ 并入当前配置时请「合并列表」，不要整段覆盖。
+#  ⚠️ 抓取那一个脚本文件注册两次（http_request + http_response），别只留一条：
+#     只留 request → 抓不到 refresh_token → access_token 过期后无法自动续期。
+# ════════════════════════════════════════════════════════════════════
+
+mitm:
+  hostnames:
+    includes:
+      - "freeapi.site"
+
+scriptings:
+  # ① 抓 access_token（请求头，任何已认证请求都能抓到，可靠性最高）
+  - http_request:
+      name: "freeapi.site 抓 access_token"
+      match: "^https://freeapi\\.site/api/v1/"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/freeapi-checkin/freeapi-token-capture.js"
+      timeout: 15
+      update_interval: 86400
+      env:
+        NOTIFY_ON_CAPTURE: "1"   # 抓到才通知；嫌吵改 "0"
+
+  # ② 抓 refresh_token（响应体，token 过期靠它续期）
+  - http_response:
+      name: "freeapi.site 抓 refresh_token"
+      match: "^https://freeapi\\.site/api/v1/auth/(login|refresh)"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/freeapi-checkin/freeapi-token-capture.js"
+      body_required: true          # 必须为 true，否则读不到响应体
+      timeout: 15
+      update_interval: 86400
+      env:
+        NOTIFY_ON_CAPTURE: "1"
+
+  # ③ 每日签到（access_token 过期会自动用 refresh_token 续期并重试）
+  - schedule:
+      name: "freeapi.site 签到"
+      cron: "30 8 * * *"           # 每天 08:30，可自行调整
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/freeapi-checkin/freeapi-checkin.js"
+      timeout: 60
+      update_interval: 86400
+      env:
+        FREEAPI_TOKEN: ""          # 留空即可，走 ①② 自动抓的 token
+        FREEAPI_REFRESH_TOKEN: ""  # 同上
+        NOTIFY_VERBOSE: "0"
