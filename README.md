@@ -8,6 +8,7 @@ Egern 用的「登录态自动抓取 + 每日定时签到」脚本，不需要�
 |---|---|---|
 | `api.hcnsec.cn`（新疆幻城网安公益大模型网关，New API 系） | [`hcnsec-checkin/`](hcnsec-checkin/) | 抓登录态 + 每日签到 + 推送额度收益 |
 | `freeapi.site`（露娜 AI API Gateway） | [`freeapi-checkin/`](freeapi-checkin/) | 抓 access/refresh token + 每日签到，自动续期 |
+| `us-3.nianhuaapi.com`（年华 API 中转站） | [`nianhua-checkin/`](nianhua-checkin/) | 每日 10:20 签到；需人机验证时推可点通知 |
 
 ## 通用用法
 

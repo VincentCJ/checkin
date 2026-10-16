@@ -1,0 +1,65 @@
+# ════════════════════════════════════════════════════════════════════
+#  us-3.nianhuaapi.com（年华 API 中转站）自动签到 · Egern 配置片段
+#
+#  脚本（本仓库 raw 地址）：
+#    抓登录态：https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-auth-capture.js
+#    每日签到：https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-checkin.js
+#
+#  ⚠️ 并入当前配置时请「合并列表」，不要整段覆盖，否则原有脚本会丢。
+#
+#  这个站和 api.hcnsec.cn 一样：签到接口挂了 Cloudflare Turnstile，
+#  每次都要全新 token（只能浏览器签发）。所以脚本的定位是：
+#     · 已签到 → 直接通知，不打扰
+#     · 能自动 → 自动签到
+#     · 被拦 → 推一条**可点通知**，点一下跳到站点签到页
+# ════════════════════════════════════════════════════════════════════
+
+mitm:
+  hostnames:
+    includes:
+      - "us-3.nianhuaapi.com"
+      - "*.nianhuaapi.com"
+
+scriptings:
+  # ① 抓登录态：一条 http_response 同时拿到请求头与响应体（推荐）
+  - http_response:
+      name: "年华 API 抓登录态"
+      match: "^https://us-3\\.nianhuaapi\\.com/api/"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-auth-capture.js"
+      body_required: true        # 必须 true，否则读不到响应体
+      max_size: 262144
+      timeout: 15
+      update_interval: 86400
+      env:
+        NOTIFY_ON_CAPTURE: "1"   # 抓到新登录态时弹通知；嫌吵改 "0"
+
+  # ①-b 如果上面那条在你机器上读不到请求头，就注释掉它，改用这两条：
+  # - http_request:
+  #     name: "年华 API 抓请求头"
+  #     match: "^https://us-3\\.nianhuaapi\\.com/api/"
+  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-auth-capture.js"
+  #     timeout: 15
+  #     update_interval: 86400
+  #     env: { NOTIFY_ON_CAPTURE: "1" }
+  # - http_response:
+  #     name: "年华 API 补抓会话刷新"
+  #     match: "^https://us-3\\.nianhuaapi\\.com/api/user/(login|auth/refresh)"
+  #     script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-auth-capture.js"
+  #     body_required: true
+  #     timeout: 15
+  #     update_interval: 86400
+  #     env: { NOTIFY_ON_CAPTURE: "0" }
+
+  # ② 每日签到：上午 10:20
+  - schedule:
+      name: "年华 API 每日签到"
+      cron: "20 10 * * *"
+      script_url: "https://raw.githubusercontent.com/VincentCJ/checkin/main/nianhua-checkin/nianhua-checkin.js"
+      timeout: 60
+      update_interval: 86400
+      env:
+        NOTIFY_ALWAYS: "1"       # "0" = 只在真的领到时通知
+        NOTIFY_VERBOSE: "0"      # "1" = 通知里带上签到前额度明细
+        NH_MANUAL_URL: "https://us-3.nianhuaapi.com/dashboard/overview"
+        # NH_TURNSTILE: ""       # 有办法拿到 Turnstile token 时填这里（约 5 分钟有效）
+        # NH_DRY_RUN: "1"        # 排错用：只读状态、不真的签到
